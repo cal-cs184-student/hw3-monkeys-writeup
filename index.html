@@ -28,18 +28,13 @@
 	<body>
 		<div class="container">
 		<h1>CS184/284A Fall 2026 Homework 3 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Derrick Yong </div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
+		Link to webpage: <a href="https://github.com/cal-cs184-student/hw3-monkeys-writeup">https://github.com/cal-cs184-student/hw3-monkeys-writeup</a>
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw3-monkeys">https://github.com/cal-cs184-student/hw3-monkeys</a>
 		
-		<figure>
-			<img src="assets/cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
-
 		<!--
 		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
 		-->
@@ -48,59 +43,415 @@
 		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		<h3>Generating rays</h3>
+		<p>For each pixel, I send <code>ns_aa</code> rays through random spots in the pixel and average the colors they bring back. Using several random rays instead of one helps smooth out jagged edges.</p>
+
+		<p>To make a ray, I imagine a screen one unit in front of the camera, sized by the field of view. The pixel position (scaled from 0 to 1) tells me where on the screen to aim, so the ray goes from the camera through that point. I rotate that direction from camera space into world space with <code>c2w</code>, normalize it, and only count hits between the near and far clipping planes.</p>
+
+		<h3>Finding what a ray hits</h3>
+		<p>Each ray remembers the farthest distance it still cares about (<code>max_t</code>). Whenever it hits something, <code>max_t</code> shrinks to that distance, so anything farther away gets ignored. After checking everything, the ray is left with the closest hit. I save the distance, the normal, the object, and its material.</p>
+
+		<h3>Triangles</h3>
+		<p>I used the Möller–Trumbore algorithm. Any point on a triangle is a mix of its three corners, using two weights \(b_1\) and \(b_2\). Setting that equal to the ray \(\mathbf{o} + t\mathbf{d}\) gives three equations for \(t\), \(b_1\), and \(b_2\), which Möller–Trumbore solves all at once:</p>
+		\[ \begin{bmatrix} t \\ b_1 \\ b_2 \end{bmatrix} = \frac{1}{\mathbf{s}_1 \cdot \mathbf{e}_1} \begin{bmatrix} \mathbf{s}_2 \cdot \mathbf{e}_2 \\ \mathbf{s}_1 \cdot \mathbf{s} \\ \mathbf{s}_2 \cdot \mathbf{d} \end{bmatrix}, \quad \mathbf{e}_1 = \mathbf{p}_2 - \mathbf{p}_1,\ \mathbf{e}_2 = \mathbf{p}_3 - \mathbf{p}_1,\ \mathbf{s} = \mathbf{o} - \mathbf{p}_1,\ \mathbf{s}_1 = \mathbf{d} \times \mathbf{e}_2,\ \mathbf{s}_2 = \mathbf{s} \times \mathbf{e}_1 \]
+		<p>It's a hit if both weights are at least 0, they add up to at most 1, and \(t\) is in range. The normal is a blend of the three corner normals using the same weights, which makes curved meshes look smooth.</p>
+
+		<h3>Spheres</h3>
+		<p>Plugging the ray into the sphere equation gives a quadratic in \(t\). No real solution means a miss. Otherwise I take the closer solution that's in range. The normal points from the center to the hit point.</p>
+
+		<h3>Results</h3>
+		<p>A few small scenes with normal shading, where color shows which way each surface faces:</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="assets/cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="assets/part1/CBempty.png" width="400px"/>
+				  <figcaption>CBempty.dae</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="assets/cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="assets/part1/CBspheres.png" width="400px"/>
+				  <figcaption>CBspheres_lambertian.dae</figcaption>
 				</td>
 			  </tr>
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="assets/cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="assets/part1/banana.png" width="400px"/>
+				  <figcaption>banana.dae</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="assets/cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="assets/part1/CBgems.png" width="400px"/>
+				  <figcaption>CBgems.dae</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
-		
+
 		<h2>Part 2: Bounding Volume Hierarchy</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+		<h3>Building the BVH</h3>
+		<p>A BVH is a tree of boxes. Each node has a box around some triangles, and its two children split those triangles into two groups. I build it recursively. I put a box around the current triangles, and if there are only a few (<code>max_leaf_size</code> or fewer), I make a leaf and stop. Otherwise I split them in two and repeat on each half.</p>
+
+		<p>To split, I look at the center of each triangle's box, find the axis where the centers are most spread out, and cut at their average. Triangles below the cut go left and the rest go right. Cutting along the longest direction keeps the two boxes from overlapping much. If everything ends up on one side, I just split the list in half so the recursion can't go on forever.</p>
+
+		<h3>Intersecting the BVH</h3>
+		<p>For a ray and a box, I find when the ray enters and leaves the box along each axis. The ray is inside the box only when all three of those time ranges overlap.</p>
+
+		<p>To trace a ray through the tree, I start at the top. If the ray misses a box, I skip everything inside it. At a leaf, I test its triangles. Otherwise I check both children. If I just need to know whether anything is hit, like for shadow rays, I stop at the first hit. If I need the closest hit, I check both sides.</p>
+
+		<h3>Large scenes</h3>
+		<p>These all render in under a second with the BVH:</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part2/maxplanck.png" width="400px"/>
+				  <figcaption>maxplanck.dae (50,801 triangles)</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part2/lucy.png" width="400px"/>
+				  <figcaption>CBlucy.dae (133,796 triangles)</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part2/bunny.png" width="400px"/>
+				  <figcaption>CBbunny.dae (28,588 triangles)</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part2/cow.png" width="400px"/>
+				  <figcaption>cow.dae (5,856 triangles)</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h3>Speed comparison</h3>
+		<p>800×600, 8 threads, 1 sample per pixel:</p>
+		<table style="width: 100%; text-align: center; border-collapse: collapse;" border="1" cellpadding="6">
+			<tr><th>Scene</th><th>Triangles</th><th>Time without BVH</th><th>Tests/ray without BVH</th><th>Time with BVH</th><th>Tests/ray with BVH</th></tr>
+			<tr><td>teapot.dae</td><td>2,464</td><td>2.15 s</td><td>439</td><td>0.031 s</td><td>3.6</td></tr>
+			<tr><td>cow.dae</td><td>5,856</td><td>5.67 s</td><td>980</td><td>0.039 s</td><td>4.7</td></tr>
+			<tr><td>CBbunny.dae</td><td>28,588</td><td>40.28 s</td><td>4,909</td><td>0.035 s</td><td>3.1</td></tr>
+			<tr><td>maxplanck.dae</td><td>50,801</td><td>60.99 s</td><td>8,714</td><td>0.043 s</td><td>4.8</td></tr>
+			<tr><td>CBlucy.dae</td><td>133,796</td><td>187.25 s</td><td>24,618</td><td>0.030 s</td><td>1.6</td></tr>
+		</table>
+
+		<p>Without the BVH, each ray checks basically every triangle, so bigger scenes take much longer. The teapot took 2 seconds and Lucy took over 3 minutes. With the BVH, every scene took about 0.03 to 0.04 seconds, and each ray needed only 2 to 5 triangle tests no matter how big the mesh was. The bigger the scene, the bigger the speedup: about 70× for the teapot and over 6,000× for Lucy. A few quick box checks let each ray skip almost the entire scene.</p>
 
 		<h2>Part 3: Direct Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+		<p>First I wrote the diffuse BSDF. A diffuse surface spreads light evenly in all directions, so its BSDF is just its color divided by \(\pi\). I also added zero-bounce lighting, which is light coming straight from a surface itself. That's what makes the ceiling light show up.</p>
+
+		<h3>Hemisphere sampling</h3>
+		<p>At each hit point, I shoot rays in random directions over the half-sphere above the surface. If a ray hits a light, I add BSDF × light brightness × \(\cos\theta\), divided by the chance of picking that direction (\(1/2\pi\)). Then I average over all the rays. New rays start a tiny bit off the surface so they don't hit the spot they came from.</p>
+
+		<h3>Light sampling</h3>
+		<p>Most random directions miss the light, so instead I aim straight at the lights. For each light, I pick a point on it, make sure it's in front of the surface, and send a shadow ray to check that nothing is in the way. If it's clear, I add the same BSDF × brightness × \(\cos\theta\) / probability term. Point lights get one sample, since every sample would be the same. Area lights get several, which I average.</p>
+
+		<h3>Hemisphere vs. light sampling</h3>
+		<p>64 samples per pixel and 32 light samples for both:</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part3/spheres_H.png" width="400px"/>
+				  <figcaption>CBspheres, hemisphere sampling</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part3/spheres_L.png" width="400px"/>
+				  <figcaption>CBspheres, light sampling</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_H.png" width="400px"/>
+				  <figcaption>CBbunny, hemisphere sampling</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_L.png" width="400px"/>
+				  <figcaption>CBbunny, light sampling</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>Light sampling also works with point lights, like the one in this scene. Hemisphere sampling would show nothing here, since a random ray basically never hits a single point.</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part3/dragon_L.png" width="400px"/>
+				  <figcaption>dragon.dae, light sampling (point light)</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<h3>Number of light samples</h3>
+		<p>1 sample per pixel, light sampling:</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_l1.png" width="400px"/>
+				  <figcaption>1 light sample (-l 1)</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_l4.png" width="400px"/>
+				  <figcaption>4 light samples (-l 4)</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_l16.png" width="400px"/>
+				  <figcaption>16 light samples (-l 16)</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part3/bunny_l64.png" width="400px"/>
+				  <figcaption>64 light samples (-l 64)</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>With 1 light sample, the bunny's shadow is very speckled, because each pixel either sees the light or it doesn't. More light samples let each pixel average over more of the light, so the shadow gets smoother. At 64 samples, it's a clean, soft shadow that fades gradually at the edges.</p>
+
+		<h3>Comparison</h3>
+		<p>Light sampling looks much cleaner for the same number of samples. With hemisphere sampling, most rays never reach the light, so they're wasted and the image stays grainy. With light sampling, almost every ray is aimed at a light, so the noise drops a lot and the shadows look smoother. It also works with point lights, which hemisphere sampling can't handle. The only other visible difference is that the hemisphere images don't have the soft glow around the ceiling light.</p>
 
 		<h2>Part 4: Global Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+		<h3>How it works</h3>
+		<p>In Part 3, light could only go from a light to a surface to the camera. Now it can bounce around the room first. At each hit point, I still add the direct light from Part 3. Then I pick a new direction from the BSDF, shoot a ray that way, and if it hits something, I do the same thing again there. The light that comes back gets the usual BSDF × \(\cos\theta\) / probability factor and is added in.</p>
+
+		<p>Each ray has a <code>depth</code> that starts at the max depth (<code>-m</code>) and drops by one with every bounce. When it reaches 1, I stop. With <code>-o 0</code>, I only keep the light from the last bounce instead of adding them all up, so each bounce can be viewed on its own.</p>
+
+		<p>To avoid tracing every path all the way to the max depth, I used Russian roulette. After the first bounce, each path keeps going with probability 0.65. When it does, I divide its light by 0.65 to make up for the paths that stopped, so the image stays equally bright on average. I always do at least one indirect bounce, and a path also ends if its ray leaves the scene.</p>
+
+		<p>Everything below uses 1024 samples per pixel and 4 light samples unless noted otherwise.</p>
+
+		<h3>Global illumination</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_global.png" width="400px"/>
+				  <figcaption>CBspheres_lambertian.dae</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_global.png" width="400px"/>
+				  <figcaption>CBbunny.dae</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<h3>Direct vs. indirect lighting</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_direct.png" width="400px"/>
+				  <figcaption>Direct lighting only</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_indirect.png" width="400px"/>
+				  <figcaption>Indirect lighting only</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>Direct lighting alone looks harsh: the ceiling is black and the shadows are completely dark, since only spots that can see the light get lit. Indirect lighting is light that bounced off something else first. It's softer, it fills in the ceiling and the shadows, and it carries red and blue from the walls onto the spheres and floor. Together they make the full image.</p>
+
+		<h3>One bounce at a time (-o 0)</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m0.png" width="400px"/>
+				  <figcaption>Bounce 0 only</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m1.png" width="400px"/>
+				  <figcaption>Bounce 1 only</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m2.png" width="400px"/>
+				  <figcaption>Bounce 2 only</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m3.png" width="400px"/>
+				  <figcaption>Bounce 3 only</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m4.png" width="400px"/>
+				  <figcaption>Bounce 4 only</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_bounce_m5.png" width="400px"/>
+				  <figcaption>Bounce 5 only</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>Bounce 0 is just the light, and bounce 1 is direct lighting. The 2nd bounce is the first that shows indirect light. The ceiling, the bunny's underside, and the shadows light up from light reflecting off the floor and walls, and the wall colors tint nearby surfaces. The 3rd bounce is dimmer and even softer, since the light has been spread around twice. Each bounce after that gets darker, because surfaces absorb some light every time. These extra bounces are what make the image look real. Rasterization usually only does direct lighting plus a flat "ambient" term, so it can't show soft light filling in shadows or colors bleeding between surfaces.</p>
+
+		<h3>Adding up bounces (-o 1)</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m0.png" width="400px"/>
+				  <figcaption>Bounces 0 to 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m1.png" width="400px"/>
+				  <figcaption>Bounces 0 to 1</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m2.png" width="400px"/>
+				  <figcaption>Bounces 0 to 2</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m3.png" width="400px"/>
+				  <figcaption>Bounces 0 to 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m4.png" width="400px"/>
+				  <figcaption>Bounces 0 to 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_accum_m5.png" width="400px"/>
+				  <figcaption>Bounces 0 to 5</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>Each image adds one more bounce. The biggest change is from 1 to 2 bounces, when the ceiling and shadows go from black to lit. After that, each bounce only brightens things a little, and by 4 or 5 bounces the image barely changes.</p>
+
+		<h3>Russian roulette</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m0.png" width="400px"/>
+				  <figcaption>Max depth 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m1.png" width="400px"/>
+				  <figcaption>Max depth 1</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m2.png" width="400px"/>
+				  <figcaption>Max depth 2</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m3.png" width="400px"/>
+				  <figcaption>Max depth 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m4.png" width="400px"/>
+				  <figcaption>Max depth 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/bunny_rr_m100.png" width="400px"/>
+				  <figcaption>Max depth 100</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>With Russian roulette, a max depth of 100 looks almost the same as 5 (just a tiny bit brighter), and it took about the same time to render: 183 s either way. Most paths get stopped long before 100 bounces, so a high max depth stays cheap.</p>
+
+		<h3>Samples per pixel</h3>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s1.png" width="400px"/>
+				  <figcaption>1 sample per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s2.png" width="400px"/>
+				  <figcaption>2 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s4.png" width="400px"/>
+				  <figcaption>4 samples per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s8.png" width="400px"/>
+				  <figcaption>8 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s16.png" width="400px"/>
+				  <figcaption>16 samples per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s64.png" width="400px"/>
+				  <figcaption>64 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part4/spheres_s1024.png" width="400px"/>
+				  <figcaption>1024 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>At 1 sample per pixel, the image is very noisy, because each pixel comes from just one random path. More samples means less noise. At 64 samples, it's clear but still a bit grainy in the shadows and on the ceiling, which only get indirect light. At 1024 samples, it's smooth.</p>
 
 		<h2>Part 5: Adaptive Sampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<h2>(Optional) Part 6: Extra Credit Opportunities</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+		<h3>How it works</h3>
+		<p>Some pixels clean up after just a few samples, like the light or a brightly lit wall, while others, like shadows and the ceiling, stay noisy for a long time. Adaptive sampling stops taking samples for a pixel once it looks good enough, so more of the time goes to the pixels that actually need it.</p>
+
+		<p>For each pixel, I keep two running totals as samples come in: the sum of each sample's brightness, \(s_1\), and the sum of each brightness squared, \(s_2\). After every <code>samplesPerBatch</code> samples, I use them to get the mean \(\mu\) and variance \(\sigma^2\):</p>
+		\[ \mu = \frac{s_1}{n}, \qquad \sigma^2 = \frac{1}{n-1}\left(s_2 - \frac{s_1^2}{n}\right), \qquad I = 1.96 \cdot \frac{\sigma}{\sqrt{n}} \]
+		<p>\(I\) tells me how far off the pixel's average could still be (with 95% confidence). If \(I \le\) <code>maxTolerance</code> \(\cdot\ \mu\), the pixel has settled, so I stop and move on. Otherwise I keep going, up to the maximum (<code>-s</code>). I save how many samples each pixel took, which is what the sample rate images show.</p>
+
+		<h3>Results</h3>
+		<p>Max 2048 samples per pixel, batches of 64, tolerance 0.05, 1 light sample, max depth 5. In the rate images, red means a pixel used a lot of samples and blue means it stopped early.</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part5/bunny_adaptive.png" width="400px"/>
+				  <figcaption>CBbunny.dae, rendered</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part5/bunny_adaptive_rate.png" width="400px"/>
+				  <figcaption>CBbunny.dae, sample rate</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="assets/part5/spheres_adaptive.png" width="400px"/>
+				  <figcaption>CBspheres_lambertian.dae, rendered</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="assets/part5/spheres_adaptive_rate.png" width="400px"/>
+				  <figcaption>CBspheres_lambertian.dae, sample rate</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>The ceiling, the shadows under the objects, and the bottom of the bunny are red. Those areas only get indirect light, which is noisy, so they needed close to the full 2048 samples. The light itself and the walls facing it are blue, because they're lit directly and settle quickly. Each scene took about 65 seconds, and the final images still come out clean, since the samples went where the noise was.</p>
+
 		</div>
 	</body>
 </html>
