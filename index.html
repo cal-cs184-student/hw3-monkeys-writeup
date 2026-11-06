@@ -56,7 +56,8 @@
 
 		<h3>Triangles</h3>
 		<p>I used the Möller–Trumbore algorithm. Any point on a triangle is a mix of its three corners, using two weights \(b_1\) and \(b_2\). Setting that equal to the ray \(\mathbf{o} + t\mathbf{d}\) gives three equations for \(t\), \(b_1\), and \(b_2\), which Möller–Trumbore solves all at once:</p>
-		\[ \begin{bmatrix} t \\ b_1 \\ b_2 \end{bmatrix} = \frac{1}{\mathbf{s}_1 \cdot \mathbf{e}_1} \begin{bmatrix} \mathbf{s}_2 \cdot \mathbf{e}_2 \\ \mathbf{s}_1 \cdot \mathbf{s} \\ \mathbf{s}_2 \cdot \mathbf{d} \end{bmatrix}, \quad \mathbf{e}_1 = \mathbf{p}_2 - \mathbf{p}_1,\ \mathbf{e}_2 = \mathbf{p}_3 - \mathbf{p}_1,\ \mathbf{s} = \mathbf{o} - \mathbf{p}_1,\ \mathbf{s}_1 = \mathbf{d} \times \mathbf{e}_2,\ \mathbf{s}_2 = \mathbf{s} \times \mathbf{e}_1 \]
+		\[ \begin{bmatrix} t \\ b_1 \\ b_2 \end{bmatrix} = \frac{1}{\mathbf{s}_1 \cdot \mathbf{e}_1} \begin{bmatrix} \mathbf{s}_2 \cdot \mathbf{e}_2 \\ \mathbf{s}_1 \cdot \mathbf{s} \\ \mathbf{s}_2 \cdot \mathbf{d} \end{bmatrix} \]
+		\[ \mathbf{e}_1 = \mathbf{p}_2 - \mathbf{p}_1,\ \mathbf{e}_2 = \mathbf{p}_3 - \mathbf{p}_1,\ \mathbf{s} = \mathbf{o} - \mathbf{p}_1,\ \mathbf{s}_1 = \mathbf{d} \times \mathbf{e}_2,\ \mathbf{s}_2 = \mathbf{s} \times \mathbf{e}_1 \]
 		<p>It's a hit if both weights are at least 0, they add up to at most 1, and \(t\) is in range. The normal is a blend of the three corner normals using the same weights, which makes curved meshes look smooth.</p>
 
 		<h3>Spheres</h3>
