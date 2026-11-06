@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
@@ -32,7 +33,8 @@
 
 		<br>
 
-		Link to webpage: <a href="https://github.com/cal-cs184-student/hw3-monkeys-writeup">https://github.com/cal-cs184-student/hw3-monkeys-writeup</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw3-monkeys-writeup/">https://cal-cs184-student.github.io/hw3-monkeys-writeup/</a>
+		<br>
 		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw3-monkeys">https://github.com/cal-cs184-student/hw3-monkeys</a>
 		
 		<!--
@@ -40,7 +42,7 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p>In this homework I built a path tracer that renders realistic images by simulating how light bounces around a scene. It shoots rays from the camera, finds what they hit, and uses a BVH to make that fast enough for meshes with over 100,000 triangles. On top of that I added direct lighting, global illumination with Russian roulette, and adaptive sampling. The most interesting thing I learned is that most of the work in rendering is fighting noise and wasted effort: the biggest improvements came from skipping work that doesn't matter and aiming samples where they actually help.</p>
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
 
@@ -137,11 +139,11 @@
 			<tr><td>CBlucy.dae</td><td>133,796</td><td>187.25 s</td><td>24,618</td><td>0.030 s</td><td>1.6</td></tr>
 		</table>
 
-		<p>Without the BVH, each ray checks basically every triangle, so bigger scenes take much longer. The teapot took 2 seconds and Lucy took over 3 minutes. With the BVH, every scene took about 0.03 to 0.04 seconds, and each ray needed only 2 to 5 triangle tests no matter how big the mesh was. The bigger the scene, the bigger the speedup: about 70× for the teapot and over 6,000× for Lucy. A few quick box checks let each ray skip almost the entire scene.</p>
+		<p>Without the BVH, each ray checks basically every triangle, so bigger scenes take much longer. The teapot took 2 seconds and Lucy took over 3 minutes. With the BVH, every scene took about 0.03 to 0.04 seconds, and each ray needed fewer than 5 triangle tests no matter how big the mesh was. The bigger the scene, the bigger the speedup: about 70× for the teapot and over 6,000× for Lucy. A few quick box checks let each ray skip almost the entire scene.</p>
 
 		<h2>Part 3: Direct Illumination</h2>
 
-		<p>First I wrote the diffuse BSDF. A diffuse surface spreads light evenly in all directions, so its BSDF is just its color divided by \(\pi\). I also added zero-bounce lighting, which is light coming straight from a surface itself. That's what makes the ceiling light show up.</p>
+		<p>First I wrote the diffuse BSDF. A diffuse surface spreads light evenly in all directions, so its BSDF is just its color divided by \(\pi\). I also added zero-bounce lighting, which is light given off directly by light sources. That's what makes the ceiling light show up.</p>
 
 		<h3>Hemisphere sampling</h3>
 		<p>At each hit point, I shoot rays in random directions over the half-sphere above the surface. If a ray hits a light, I add BSDF × light brightness × \(\cos\theta\), divided by the chance of picking that direction (\(1/2\pi\)). Then I average over all the rays. New rays start a tiny bit off the surface so they don't hit the spot they came from.</p>
@@ -215,7 +217,7 @@
 		<p>With 1 light sample, the bunny's shadow is very speckled, because each pixel either sees the light or it doesn't. More light samples let each pixel average over more of the light, so the shadow gets smoother. At 64 samples, it's a clean, soft shadow that fades gradually at the edges.</p>
 
 		<h3>Comparison</h3>
-		<p>Light sampling looks much cleaner for the same number of samples. With hemisphere sampling, most rays never reach the light, so they're wasted and the image stays grainy. With light sampling, almost every ray is aimed at a light, so the noise drops a lot and the shadows look smoother. It also works with point lights, which hemisphere sampling can't handle. The only other visible difference is that the hemisphere images don't have the soft glow around the ceiling light.</p>
+		<p>Light sampling looks much cleaner for the same number of samples. With hemisphere sampling, most rays never reach the light, so they're wasted and the image stays grainy. With light sampling, almost every ray is aimed at a light, so the noise drops a lot and the shadows look smoother. It also works with point lights, which hemisphere sampling can't handle.</p>
 
 		<h2>Part 4: Global Illumination</h2>
 
@@ -369,7 +371,7 @@
 			  </tr>
 			</table>
 		</div>
-		<p>With Russian roulette, a max depth of 100 looks almost the same as 5 (just a tiny bit brighter), and it took about the same time to render: 183 s either way. Most paths get stopped long before 100 bounces, so a high max depth stays cheap.</p>
+		<p>With Russian roulette, a max depth of 100 looks almost the same as a max depth of 4 (just a tiny bit brighter), and it rendered about as fast as a max depth of 5: 183 s either way. Most paths get stopped long before 100 bounces, so a high max depth stays cheap.</p>
 
 		<h3>Samples per pixel</h3>
 		<div style="display: flex; flex-direction: column; align-items: center;">
